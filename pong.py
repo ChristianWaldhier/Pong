@@ -10,6 +10,7 @@ FRAMERATE = 35
 
 # Define my classes
 
+
 class Ball:
 
     RADIUS = 20
@@ -53,12 +54,17 @@ class Paddle:
 
     def show(self, color):
         # global screen
-        pygame.draw.rect(screen, color, pygame.Rect((WIDTH-self.WIDTH, self.y-self.HEIGHT//2, WIDTH, HEIGHT)))
+        pygame.draw.rect(screen, color,
+                         pygame.Rect(WIDTH-self.WIDTH,
+                                     self.y-self.HEIGHT//2,
+                                     self.WIDTH, self.HEIGHT))
 
     def update(self):
-        self.show(pygame.Color("black"))
-        self.y = pygame.mouse.get_pos()[1]
-        self.show(pygame.Color("white"))
+        newy = pygame.mouse.get_pos()[1]
+        if newy - self.HEIGHT // 2 > BORDER and newy + self.HEIGHT // 2 < HEIGHT - BORDER:
+            self.show(pygame.Color("black"))
+            self.y = pygame.mouse.get_pos()[1]
+            self.show(pygame.Color("white"))
 
 
 # create objects
@@ -76,8 +82,8 @@ fg_color = pygame.Color("white")
 screen.fill(bg_color)
 
 pygame.draw.rect(screen, fg_color, pygame.Rect(0, 0, WIDTH, BORDER))
-pygame.draw.rect(screen, fg_color, pygame.Rect((0, 0, BORDER, HEIGHT)))
-pygame.draw.rect(screen, fg_color, pygame.Rect((0, HEIGHT-BORDER, WIDTH, HEIGHT)))
+pygame.draw.rect(screen, fg_color, pygame.Rect(0, 0, BORDER, HEIGHT))
+pygame.draw.rect(screen, fg_color, pygame.Rect(0, HEIGHT-BORDER, WIDTH, HEIGHT))
 
 ball = Ball(WIDTH-Ball.RADIUS, HEIGHT//2, -VELOCITY, -VELOCITY)
 ball.show(fg_color)
