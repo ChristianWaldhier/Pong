@@ -1,5 +1,6 @@
 import pygame
-
+import pandas as pd
+from sklearn.neighbors import KNeighborsRegressor
 # Variables
 
 WIDTH = 1200
@@ -7,6 +8,7 @@ HEIGHT = 600
 BORDER = 20
 VELOCITY = 15
 FRAMERATE = 35
+MODE = "AI"
 
 # Define my classes
 
@@ -64,11 +66,16 @@ class Paddle:
         if newy - self.HEIGHT // 2 > BORDER and newy + self.HEIGHT // 2 < HEIGHT - BORDER:
             self.show(pygame.Color("black"))
             self.y = pygame.mouse.get_pos()[1]
+            # self.y = newy
             self.show(pygame.Color("white"))
-
-
-# create objects
-
+            
+    def update_ai(self, newy):
+    # newy = pygame.mouse.get_pos()[1]
+        if newy - self.HEIGHT // 2 > BORDER and newy + self.HEIGHT // 2 < HEIGHT - BORDER:
+            self.show(pygame.Color("black"))
+            # self.y = pygame.mouse.get_pos()[1]
+            self.y = newy
+            self.show(pygame.Color("white"))
 
 # Draw the scenario
 
@@ -92,6 +99,29 @@ paddle.show(fg_color)
 
 clock = pygame.time.Clock()
 
+if MODE == 'TRAIN':
+
+# get data
+    sample = open("game.csv", "w")
+    print("x,y,vx,vy,Paddle.y", file=sample)
+
+if MODE == 'AI':
+
+    # prepare data
+    pong = pd.read_csv("game.csv")
+    pong = pong.drop_duplicates()
+    
+    # train model
+    
+    # X = pong.drop(columns="Paddle.y")
+    X = pong.loc[:, ['x', 'y', 'vx', 'vy']]
+    y = pong['Paddle.y']
+    
+    clf = KNeighborsRegressor(n_neighbors=3)
+    clf = clf.fit(X, y)
+    
+    df = pd.DataFrame(columns=['x', 'y', 'vx', 'vy'])
+
 while True:
     e = pygame.event.poll()
     if e.type == pygame.QUIT:
@@ -100,7 +130,15 @@ while True:
     clock.tick(FRAMERATE)
     pygame.display.flip()
 
-    paddle.update()
+    if MODE == 'TRAIN':
+        paddle.update()
+        print("{},{},{},{},{}".format(ball.x, ball.y, ball.vx, ball.vy, paddle.y), file=sample)
+        
+    if MODE == 'AI':
+        to_predict = df.append({'x': ball.x, 'y': ball.y, 'vx': ball.vx, 'vy': ball.vy}, ignore_index=True)
+        should_move = clf.predict(to_predict)
+        paddle.update_ai(should_move)
+    
 
     ball.update()
 
