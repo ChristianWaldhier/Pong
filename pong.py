@@ -1,6 +1,7 @@
 import pygame
 import pandas as pd
 from sklearn.neighbors import KNeighborsRegressor
+import time
 # Variables
 
 WIDTH = 1200
@@ -8,7 +9,7 @@ HEIGHT = 600
 BORDER = 20
 VELOCITY = 15
 FRAMERATE = 35
-MODE = "AI"
+mode = "train"
 
 # Define my classes
 
@@ -97,15 +98,17 @@ ball.show(fg_color)
 paddle = Paddle(HEIGHT//2)
 paddle.show(fg_color)
 
+start_time = time.time()
 clock = pygame.time.Clock()
 
-if MODE == 'TRAIN':
+if mode == 'train':
 
 # get data
     sample = open("game.csv", "w")
     print("x,y,vx,vy,Paddle.y", file=sample)
+    df_train = pd.DataFrame(columns=['x', 'y', 'vx', 'vy', 'py'])
 
-if MODE == 'AI':
+if mode == 'ai':
 
     # prepare data
     pong = pd.read_csv("game.csv")
@@ -113,14 +116,15 @@ if MODE == 'AI':
     
     # train model
     
-    # X = pong.drop(columns="Paddle.y")
-    X = pong.loc[:, ['x', 'y', 'vx', 'vy']]
-    y = pong['Paddle.y']
+         # X = pong.drop(columns="Paddle.y")
+    # X = pong.loc[:, ['x', 'y', 'vx', 'vy']]
+    # y = pong['Paddle.y']
     
     clf = KNeighborsRegressor(n_neighbors=3)
     clf = clf.fit(X, y)
     
     df = pd.DataFrame(columns=['x', 'y', 'vx', 'vy'])
+    
 
 while True:
     e = pygame.event.poll()
@@ -129,12 +133,28 @@ while True:
 
     clock.tick(FRAMERATE)
     pygame.display.flip()
+    
+    print(time.time()-start_time)
+    
+    if time.time()-start_time > 60:
+        if mode == 'train':
+            X = df_train.loc[:, ['x', 'y', 'vx', 'vy']]
+            y = df_train['py']
+            
+            clf = KNeighborsRegressor(n_neighbors=3)
+            clf = clf.fit(X, y)
+            
+            df = pd.DataFrame(columns=['x', 'y', 'vx', 'vy'])
+            
+        mode = 'ai'
 
-    if MODE == 'TRAIN':
+    if mode == 'train':
         paddle.update()
         print("{},{},{},{},{}".format(ball.x, ball.y, ball.vx, ball.vy, paddle.y), file=sample)
+        df_train = df_train.append({'x': ball.x, 'y': ball.y, 'vx': ball.vx, 'vy': ball.vy, 'py': paddle.y}, ignore_index=True)
+        print(df_train)
         
-    if MODE == 'AI':
+    if mode == 'ai':
         to_predict = df.append({'x': ball.x, 'y': ball.y, 'vx': ball.vx, 'vy': ball.vy}, ignore_index=True)
         should_move = clf.predict(to_predict)
         paddle.update_ai(should_move)
